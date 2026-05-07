@@ -266,6 +266,7 @@ def main():
             host=args.host,
             port=args.port,
             stateless_http=True,
+            streamable_http_path="/",
         )
         register_tools(mcp)
 
