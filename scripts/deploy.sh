@@ -11,7 +11,10 @@ echo "🚀 Symphony Lite 배포 시작..."
 # git pull origin main
 
 # 2. Docker Compose 빌드 & 배포
-echo "🐳 Docker Compose build & up..."
+# BuildKit이 container에 추가적인 thread/PID 제한을 걸어서
+# pip/apt가 실패할 수 있으므로 비활성화
+export DOCKER_BUILDKIT=0
+echo "🐳 Docker Compose build & up (BuildKit disabled)..."
 docker compose up --build -d
 
 # 3. Health check
