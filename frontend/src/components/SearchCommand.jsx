@@ -50,28 +50,19 @@ export default function SearchCommand({ open, onOpenChange }) {
   }, [open, authFetch])
 
   useEffect(() => {
-    if (!query.trim() || projects.length === 0) {
+    if (!query.trim()) {
       setIssues([])
       return
     }
 
-    const slug = projects[0]?.slug
-    if (!slug) return
-
     const timer = setTimeout(() => {
-      authFetch(`/api/v1/issues/project/${slug}`)
+      authFetch(`/api/v1/issues?search=${encodeURIComponent(query)}&limit=5`)
         .then((r) => (r.ok ? r.json() : []))
-        .then((data) => {
-          const filtered = data.filter((i) =>
-            i.title.toLowerCase().includes(query.toLowerCase()) ||
-            i.identifier.toLowerCase().includes(query.toLowerCase())
-          )
-          setIssues(filtered.slice(0, 5))
-        })
+        .then(setIssues)
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [query, projects, authFetch])
+  }, [query, authFetch])
 
   const filteredProjects = projects.filter((p) =>
     p.name.toLowerCase().includes(query.toLowerCase()) ||

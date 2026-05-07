@@ -9,6 +9,17 @@ from app.auth import get_current_user_or_api_key
 router = APIRouter(prefix="/issues", tags=["issues"])
 
 
+@router.get("", response_model=List[schemas.IssueResponse])
+def search_issues(
+    search: Optional[str] = Query(None, description="제목 또는 identifier 검색"),
+    skip: int = 0,
+    limit: int = 100,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    return crud.search_issues(db, search=search, skip=skip, limit=limit)
+
+
 @router.get("/project/{project_slug}", response_model=List[schemas.IssueResponse])
 def list_issues_by_project(
     project_slug: str,

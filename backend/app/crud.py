@@ -1,7 +1,7 @@
 from typing import List, Optional
 from uuid import UUID
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, asc
+from sqlalchemy import desc, asc, or_
 from sqlalchemy.orm import joinedload
 from app import models, schemas
 
@@ -134,6 +134,18 @@ def get_issues_by_team(
     if state:
         query = query.filter(models.Issue.state == state)
     return query.order_by(desc(models.Issue.priority), desc(models.Issue.created_at)).offset(skip).limit(limit).all()
+
+def search_issues(db: Session, search: Optional[str] = None, skip: int = 0, limit: int = 100):
+    query = db.query(models.Issue).options(joinedload(models.Issue.project))
+    if search:
+        pattern = f"%{search}%"
+        query = query.filter(
+            or_(
+                models.Issue.title.ilike(pattern),
+                models.Issue.identifier.ilike(pattern)
+            )
+        )
+    return query.order_by(desc(models.Issue.created_at)).offset(skip).limit(limit).all()
 
 def create_issue(db: Session, issue: schemas.IssueCreate, created_by_user_id: Optional[UUID] = None, created_by_agent_id: Optional[str] = None, reporter_id: Optional[UUID] = None):
     db_issue = models.Issue(
