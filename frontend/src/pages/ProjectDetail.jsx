@@ -525,7 +525,17 @@ export default function ProjectDetail() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate font-medium">{issue.title}</p>
-                      <p className="text-xs text-muted-foreground">{issue.identifier}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {issue.identifier}
+                        {issue.created_by_user?.name && (
+                          <span className="ml-1">
+                            · {issue.created_by_user.name}
+                            {issue.created_by_agent_id && (
+                              <Badge variant="outline" className="text-[10px] px-1 py-0 ml-1">agent</Badge>
+                            )}
+                          </span>
+                        )}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-4">

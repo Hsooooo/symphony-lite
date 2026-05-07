@@ -181,12 +181,13 @@ class IssueResponse(IssueBase):
     reporter: Optional[UserResponse] = None
     assignee: Optional[UserResponse] = None
     created_by_user: Optional[UserResponse] = None
+    created_by_agent_id: Optional[str] = None
     comments: List[CommentResponse] = []
 
     @computed_field
     @property
     def creator_type(self) -> str:
-        return "agent" if self.created_by_user is None else "user"
+        return "agent" if self.created_by_agent_id is not None else "user"
 
 
 # ========== StatusProposal ==========

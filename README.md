@@ -263,6 +263,8 @@ Kimi: MCP symphony_propose_status_change(EM-1, "review", "테스트 통과")
 | POST | `/api/v1/status-proposals/{id}/reject` | 상태 변경 거절 |
 | GET | `/api/v1/issues/{identifier}/work-logs` | 작업 로그 조회 |
 
+> **이슈 생성자 구분:** 이슈 응답에 `created_by_agent_id` 필드가 포함됩니다. MCP(에이전트)를 통해 생성된 이슈는 `created_by_agent_id`가 `"mcp"`로 설정되며, 웹 UI에서 생성자 이름 옆에 `(agent)` 배지가 표시됩니다.
+
 ## 구현 단계
 
 - [x] **Phase 1**: 핵심 API + React UI + Docker Compose 배포

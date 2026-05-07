@@ -142,7 +142,10 @@ erDiagram
         jsonb state_meta
         int priority
         array labels
-        uuid assignee_id
+        uuid reporter_id FK
+        uuid assignee_id FK
+        uuid created_by_user_id FK
+        string created_by_agent_id
         string branch_name
         text pr_url
         text workpad
