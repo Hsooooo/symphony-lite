@@ -31,6 +31,9 @@ def get_project(db: Session, project_id: UUID):
 def get_project_by_slug(db: Session, slug: str):
     return db.query(models.Project).filter(models.Project.slug == slug).first()
 
+def get_projects(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Project).offset(skip).limit(limit).all()
+
 def get_projects_by_team(db: Session, team_id: UUID, skip: int = 0, limit: int = 100):
     return db.query(models.Project).filter(models.Project.team_id == team_id).offset(skip).limit(limit).all()
 

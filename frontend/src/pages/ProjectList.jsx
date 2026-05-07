@@ -20,16 +20,13 @@ export default function ProjectList() {
   const { user, authFetch } = useAuth()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ slug: '', name: '', repo_url: '' })
+  const [form, setForm] = useState({ slug: '', name: '' })
   const [error, setError] = useState('')
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
-      const teamsRes = await authFetch('/api/v1/teams')
-      const teams = teamsRes.ok ? await teamsRes.json() : []
-      if (teams.length === 0) return []
-      const res = await authFetch(`/api/v1/projects/team/${teams[0].slug}`)
+      const res = await authFetch('/api/v1/projects')
       if (!res.ok) return []
       return res.json()
     },
@@ -50,7 +47,7 @@ export default function ProjectList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
-      setForm({ slug: '', name: '', repo_url: '' })
+      setForm({ slug: '', name: '' })
       setError('')
       setOpen(false)
     },
@@ -105,15 +102,6 @@ export default function ProjectList() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="프로젝트 이름"
                   required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="repo">Repo URL (선택)</Label>
-                <Input
-                  id="repo"
-                  value={form.repo_url}
-                  onChange={(e) => setForm({ ...form, repo_url: e.target.value })}
-                  placeholder="https://github.com/..."
                 />
               </div>
               <Button type="submit" className="w-full" disabled={createMutation.isPending}>

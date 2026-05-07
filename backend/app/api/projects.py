@@ -9,6 +9,11 @@ from app.auth import get_current_user_or_api_key
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
+@router.get("", response_model=List[schemas.ProjectResponse])
+def list_projects(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return crud.get_projects(db, skip=skip, limit=limit)
+
+
 @router.get("/team/{team_slug}", response_model=List[schemas.ProjectResponse])
 def list_projects_by_team(team_slug: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     team = crud.get_team_by_slug(db, slug=team_slug)
