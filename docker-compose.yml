@@ -2,6 +2,7 @@ services:
   db:
     image: postgres:15-alpine
     container_name: symphony-db
+    restart: unless-stopped
     environment:
       POSTGRES_USER: symphony
       POSTGRES_PASSWORD: symphony
@@ -23,6 +24,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: symphony-backend
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg2://symphony:symphony@db:5432/symphony
     depends_on:
@@ -37,6 +39,7 @@ services:
       context: .
       dockerfile: mcp/Dockerfile
     container_name: symphony-mcp
+    restart: unless-stopped
     environment:
       SYMPHONY_API_URL: http://backend:8000/api/v1
       SYMPHONY_API_KEY: ${SYMPHONY_API_KEY:-}
@@ -50,6 +53,7 @@ services:
       context: .
       dockerfile: nginx/Dockerfile
     container_name: symphony-nginx
+    restart: unless-stopped
     ports:
       - "10356:80"  # 메인 접근 포트
     depends_on:
