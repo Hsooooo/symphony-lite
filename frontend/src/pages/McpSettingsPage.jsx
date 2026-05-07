@@ -52,7 +52,7 @@ export default function McpSettingsPage() {
   const [agent, setAgent] = useState('kimi')
 
   const apiBaseUrl = `${window.location.origin}/api/v1`
-  const mcpUrl = `${window.location.origin}/mcp`
+  const mcpUrl = `${window.location.protocol}//${window.location.hostname}:10357/mcp`
 
   // keys 목록에 localStorage에 저장된 rawKey를 merge
   const keysWithLocal = keys.map((k) => {

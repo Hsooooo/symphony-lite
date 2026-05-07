@@ -45,6 +45,8 @@ services:
       SYMPHONY_API_KEY: ${SYMPHONY_API_KEY:-}
     depends_on:
       - backend
+    ports:
+      - "10357:8001"
     networks:
       - symphony-net
 

@@ -222,6 +222,28 @@ def main():
 
         _original_api_key = ENV_API_KEY
 
+        class LoggingMiddleware:
+            def __init__(self, app):
+                self.app = app
+
+            async def __call__(self, scope, receive, send):
+                if scope["type"] == "http":
+                    method = scope.get("method", "")
+                    path = scope.get("path", "")
+                    headers = dict(scope.get("headers", []))
+                    api_key = headers.get(b"x-api-key", b"")
+                    print(f"[MCP] >>> {method} {path} | X-API-Key={'set' if api_key else 'none'}", flush=True)
+
+                    async def wrapped_send(message):
+                        if message.get("type") == "http.response.start":
+                            status = message.get("status", 0)
+                            print(f"[MCP] <<< HTTP {status} {method} {path}", flush=True)
+                        await send(message)
+
+                    await self.app(scope, receive, wrapped_send)
+                else:
+                    await self.app(scope, receive, send)
+
         class APIKeyMiddleware:
             def __init__(self, app, fallback_key=""):
                 self.app = app
