@@ -971,7 +971,6 @@ export default function ProjectDetail() {
                   <SelectValue placeholder="팀 선택 (선택사항)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">미지정</SelectItem>
                   {teams?.map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name}
