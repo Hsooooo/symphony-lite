@@ -328,24 +328,24 @@ export default function ProjectDetail() {
                     <div className="space-y-4 mt-2">
                       <div className="space-y-2">
                         <Label>사용자</Label>
-                        <Select value={inviteUserId} onValueChange={setInviteUserId}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="초대할 사용자 선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableUsers.length === 0 ? (
-                              <SelectItem value="" disabled>
-                                초대 가능한 사용자가 없습니다
-                              </SelectItem>
-                            ) : (
-                              availableUsers.map((u) => (
+                        {availableUsers.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-2">
+                            초대 가능한 사용자가 없습니다
+                          </p>
+                        ) : (
+                          <Select value={inviteUserId || undefined} onValueChange={setInviteUserId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="초대할 사용자 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableUsers.map((u) => (
                                 <SelectItem key={u.id} value={u.id}>
                                   {u.name} ({u.username})
                                 </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>역할</Label>
