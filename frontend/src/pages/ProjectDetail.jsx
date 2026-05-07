@@ -3,7 +3,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, Filter, ArrowUpDown,
-  Ticket, GitBranch, Calendar
+  Ticket, GitBranch, Calendar,
+  Users, UserPlus, Trash2, User
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -20,6 +21,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 
 const stateLabels = {
@@ -36,16 +57,26 @@ const stateColors = {
   done: 'bg-green-500/15 text-green-400',
 }
 
+function formatDate(iso) {
+  if (!iso) return '-'
+  const d = new Date(iso)
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function ProjectDetail() {
   const { slug } = useParams()
   const navigate = useNavigate()
-  const { authFetch } = useAuth()
+  const { user, authFetch } = useAuth()
   const queryClient = useQueryClient()
 
   const [filterState, setFilterState] = useState('all')
   const [sortBy, setSortBy] = useState('newest')
   const [createOpen, setCreateOpen] = useState(false)
   const [newIssue, setNewIssue] = useState({ title: '', body: '', priority: 3 })
+
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteUserId, setInviteUserId] = useState('')
+  const [inviteRole, setInviteRole] = useState('member')
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['project', slug],
@@ -63,6 +94,26 @@ export default function ProjectDetail() {
       if (!res.ok) return []
       return res.json()
     },
+  })
+
+  const { data: members, isLoading: membersLoading } = useQuery({
+    queryKey: ['project-members', slug],
+    queryFn: async () => {
+      const res = await authFetch(`/api/v1/projects/${slug}/members`)
+      if (!res.ok) throw new Error('멤버 목록을 불러올 수 없습니다')
+      return res.json()
+    },
+    enabled: !!slug,
+  })
+
+  const { data: teamUsers } = useQuery({
+    queryKey: ['team-members', project?.team?.slug],
+    queryFn: async () => {
+      const res = await authFetch(`/api/v1/teams/${project.team.slug}/members`)
+      if (!res.ok) return []
+      return res.json()
+    },
+    enabled: !!project?.team?.slug,
   })
 
   const createMutation = useMutation({
@@ -89,6 +140,47 @@ export default function ProjectDetail() {
     onError: () => toast.error('이슈 생성에 실패했습니다'),
   })
 
+  const inviteMutation = useMutation({
+    mutationFn: async ({ user_id, role }) => {
+      const res = await authFetch(`/api/v1/projects/${slug}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id, role }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.detail || '멤버 추가에 실패했습니다')
+      }
+      return res.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-members', slug] })
+      setInviteOpen(false)
+      setInviteUserId('')
+      setInviteRole('member')
+      toast.success('멤버가 추가되었습니다')
+    },
+    onError: (err) => toast.error(err.message),
+  })
+
+  const removeMutation = useMutation({
+    mutationFn: async (user_id) => {
+      const res = await authFetch(`/api/v1/projects/${slug}/members/${user_id}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error('멤버 제거에 실패했습니다')
+      return res.json()
+    },
+    onSuccess: (_, user_id) => {
+      queryClient.invalidateQueries({ queryKey: ['project-members', slug] })
+      toast.success('멤버가 제거되었습니다')
+      if (user_id === user?.id) {
+        navigate('/projects')
+      }
+    },
+    onError: () => toast.error('멤버 제거에 실패했습니다'),
+  })
+
   const filteredIssues = useMemo(() => {
     let list = issues || []
     if (filterState !== 'all') {
@@ -104,6 +196,15 @@ export default function ProjectDetail() {
     }
     return list
   }, [issues, filterState, sortBy])
+
+  const myMembership = members?.find((m) => m.user_id === user?.id)
+  const isProjectAdmin = myMembership?.role === 'admin'
+
+  const availableUsers = useMemo(() => {
+    if (!teamUsers || !members) return []
+    const memberIds = new Set(members.map((m) => m.user_id))
+    return teamUsers.filter((u) => !memberIds.has(u.id))
+  }, [teamUsers, members])
 
   return (
     <div className="space-y-6">
@@ -127,78 +228,224 @@ export default function ProjectDetail() {
         </div>
       )}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <Select value={filterState} onValueChange={setFilterState}>
-            <SelectTrigger className="w-[140px]">
-              <Filter className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="상태" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">전체</SelectItem>
-              <SelectItem value="todo">할 일</SelectItem>
-              <SelectItem value="in_progress">진행 중</SelectItem>
-              <SelectItem value="review">검토</SelectItem>
-              <SelectItem value="done">완료</SelectItem>
-            </SelectContent>
-          </Select>
+      <Tabs defaultValue="issues">
+        <TabsList>
+          <TabsTrigger value="issues">이슈</TabsTrigger>
+          <TabsTrigger value="members">멤버</TabsTrigger>
+        </TabsList>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[140px]">
-              <ArrowUpDown className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="정렬" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">최신순</SelectItem>
-              <SelectItem value="priority">우선순위</SelectItem>
-              <SelectItem value="state">상태순</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <TabsContent value="issues" className="space-y-6 mt-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Select value={filterState} onValueChange={setFilterState}>
+                <SelectTrigger className="w-[140px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="상태" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체</SelectItem>
+                  <SelectItem value="todo">할 일</SelectItem>
+                  <SelectItem value="in_progress">진행 중</SelectItem>
+                  <SelectItem value="review">검토</SelectItem>
+                  <SelectItem value="done">완료</SelectItem>
+                </SelectContent>
+              </Select>
 
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          이슈 생성
-        </Button>
-      </div>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-[140px]">
+                  <ArrowUpDown className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="정렬" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">최신순</SelectItem>
+                  <SelectItem value="priority">우선순위</SelectItem>
+                  <SelectItem value="state">상태순</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      {issuesLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full" />
-          ))}
-        </div>
-      ) : filteredIssues.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
-          <Ticket className="h-12 w-12 text-muted-foreground" />
-          <p className="mt-4 text-lg font-medium">이슈가 없습니다</p>
-          <p className="text-muted-foreground">새 이슈를 생성하여 시작하세요</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filteredIssues.map((issue) => (
-            <Link
-              key={issue.id}
-              to={`/projects/${slug}/issues/${issue.identifier}`}
-              className="flex items-center justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-accent"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">
-                  <Ticket className="h-4 w-4 text-muted-foreground" />
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              이슈 생성
+            </Button>
+          </div>
+
+          {issuesLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : filteredIssues.length === 0 ? (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
+              <Ticket className="h-12 w-12 text-muted-foreground" />
+              <p className="mt-4 text-lg font-medium">이슈가 없습니다</p>
+              <p className="text-muted-foreground">새 이슈를 생성하여 시작하세요</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredIssues.map((issue) => (
+                <Link
+                  key={issue.id}
+                  to={`/projects/${slug}/issues/${issue.identifier}`}
+                  className="flex items-center justify-between rounded-lg border bg-card p-4 transition-colors hover:bg-accent"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted">
+                      <Ticket className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{issue.title}</p>
+                      <p className="text-xs text-muted-foreground">{issue.identifier}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 ml-4">
+                    <Badge className={stateColors[issue.state]}>{stateLabels[issue.state]}</Badge>
+                    <span className="text-xs text-muted-foreground hidden sm:inline">P{issue.priority}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="members" className="space-y-6 mt-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-lg">프로젝트 멤버</CardTitle>
+              {isProjectAdmin && (
+                <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      멤버 초대
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>멤버 초대</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-2">
+                      <div className="space-y-2">
+                        <Label>사용자</Label>
+                        <Select value={inviteUserId} onValueChange={setInviteUserId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="초대할 사용자 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableUsers.length === 0 ? (
+                              <SelectItem value="" disabled>
+                                초대 가능한 사용자가 없습니다
+                              </SelectItem>
+                            ) : (
+                              availableUsers.map((u) => (
+                                <SelectItem key={u.id} value={u.id}>
+                                  {u.name} ({u.username})
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>역할</Label>
+                        <Select value={inviteRole} onValueChange={setInviteRole}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="member">멤버</SelectItem>
+                            <SelectItem value="admin">관리자</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          className="flex-1"
+                          onClick={() =>
+                            inviteMutation.mutate({
+                              user_id: inviteUserId,
+                              role: inviteRole,
+                            })
+                          }
+                          disabled={!inviteUserId || inviteMutation.isPending}
+                        >
+                          {inviteMutation.isPending ? '추가 중...' : '추가'}
+                        </Button>
+                        <Button variant="ghost" onClick={() => setInviteOpen(false)}>
+                          취소
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </CardHeader>
+            <CardContent>
+              {membersLoading ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
                 </div>
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{issue.title}</p>
-                  <p className="text-xs text-muted-foreground">{issue.identifier}</p>
+              ) : !members || members.length === 0 ? (
+                <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-10">
+                  <Users className="h-10 w-10 text-muted-foreground" />
+                  <p className="mt-3 text-base font-medium">프로젝트에 등록된 멤버가 없습니다</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 ml-4">
-                <Badge className={stateColors[issue.state]}>{stateLabels[issue.state]}</Badge>
-                <span className="text-xs text-muted-foreground hidden sm:inline">P{issue.priority}</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      )}
+              ) : (
+                <div className="space-y-2">
+                  {members.map((member) => {
+                    const canRemove =
+                      isProjectAdmin || member.user_id === user?.id
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between rounded-lg border p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>
+                              {member.user?.name?.charAt(0) || <User className="h-4 w-4" />}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">
+                              {member.user?.name || 'Unknown'}
+                              <span className="text-muted-foreground ml-1">
+                                ({member.user?.username || '-'})
+                              </span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              참여일 {formatDate(member.joined_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={member.role === 'admin' ? 'secondary' : 'outline'}>
+                            {member.role === 'admin' ? '관리자' : '멤버'}
+                          </Badge>
+                          {canRemove && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => removeMutation.mutate(member.user_id)}
+                              disabled={removeMutation.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* 이슈 생성 사이드 패널 */}
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
