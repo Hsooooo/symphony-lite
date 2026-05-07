@@ -106,14 +106,13 @@ export default function ProjectDetail() {
     enabled: !!slug,
   })
 
-  const { data: teamUsers } = useQuery({
-    queryKey: ['team-members', project?.team?.slug],
+  const { data: allUsers } = useQuery({
+    queryKey: ['all-users'],
     queryFn: async () => {
-      const res = await authFetch(`/api/v1/teams/${project.team.slug}/members`)
+      const res = await authFetch('/api/v1/users')
       if (!res.ok) return []
       return res.json()
     },
-    enabled: !!project?.team?.slug,
   })
 
   const createMutation = useMutation({
@@ -201,10 +200,10 @@ export default function ProjectDetail() {
   const isProjectAdmin = myMembership?.role === 'admin'
 
   const availableUsers = useMemo(() => {
-    if (!teamUsers || !members) return []
+    if (!allUsers || !members) return []
     const memberIds = new Set(members.map((m) => m.user_id))
-    return teamUsers.filter((u) => !memberIds.has(u.id))
-  }, [teamUsers, members])
+    return allUsers.filter((u) => !memberIds.has(u.id))
+  }, [allUsers, members])
 
   return (
     <div className="space-y-6">
@@ -340,7 +339,14 @@ export default function ProjectDetail() {
                             <SelectContent>
                               {availableUsers.map((u) => (
                                 <SelectItem key={u.id} value={u.id}>
-                                  {u.name} ({u.username})
+                                  <span className="flex items-center gap-2">
+                                    {u.name} ({u.username})
+                                    {u.team && (
+                                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                        {u.team.name}
+                                      </Badge>
+                                    )}
+                                  </span>
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -415,6 +421,11 @@ export default function ProjectDetail() {
                               <span className="text-muted-foreground ml-1">
                                 ({member.user?.username || '-'})
                               </span>
+                              {member.user?.team && (
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 ml-2">
+                                  {member.user.team.name}
+                                </Badge>
+                              )}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               참여일 {formatDate(member.joined_at)}

@@ -81,7 +81,7 @@ class ProjectMemberResponse(ProjectMemberBase):
     user_id: UUID
     invited_by: Optional[UUID] = None
     joined_at: datetime
-    user: Optional[UserResponse] = None
+    user: Optional[UserWithTeam] = None
 
 
 # ========== Issue ==========

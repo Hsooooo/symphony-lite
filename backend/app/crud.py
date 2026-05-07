@@ -59,7 +59,7 @@ def get_project_member(db: Session, project_id: UUID, user_id: UUID):
 
 def get_project_members(db: Session, project_id: UUID, skip: int = 0, limit: int = 100):
     return db.query(models.ProjectMember).options(
-        joinedload(models.ProjectMember.user)
+        joinedload(models.ProjectMember.user).joinedload(models.User.team)
     ).filter(
         models.ProjectMember.project_id == project_id
     ).offset(skip).limit(limit).all()
@@ -250,6 +250,11 @@ def get_user(db: Session, user_id: UUID):
 
 def get_user_by_username(db: Session, username: str):
     return db.query(models.User).filter(models.User.username == username).first()
+
+def get_users(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.User).options(
+        joinedload(models.User.team)
+    ).offset(skip).limit(limit).all()
 
 def get_users_by_team(db: Session, team_id: UUID, skip: int = 0, limit: int = 100):
     return db.query(models.User).filter(

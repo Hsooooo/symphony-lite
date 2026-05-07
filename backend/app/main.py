@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
-from app.api import teams, projects, issues, status_proposals, auth, mcp
+from app.api import teams, projects, issues, status_proposals, auth, mcp, users
 from app.database import engine, Base
 from app.seed import run_seed
 
@@ -32,6 +32,7 @@ app.include_router(projects.router, prefix="/api/v1")
 app.include_router(issues.router, prefix="/api/v1")
 app.include_router(status_proposals.router, prefix="/api/v1")
 app.include_router(mcp.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
 
 
 @app.get("/health")
