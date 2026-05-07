@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { ArrowLeft, Save, RotateCcw, Check, Clock, AlertCircle, CheckCircle2, Circle, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
@@ -236,7 +237,7 @@ export default function IssueDetailPage() {
                 />
               ) : (
                 <div className="prose prose-sm max-w-none">
-                  <ReactMarkdown>{issue.body || '내용이 없습니다'}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{issue.body || '내용이 없습니다'}</ReactMarkdown>
                 </div>
               )}
             </CardContent>
