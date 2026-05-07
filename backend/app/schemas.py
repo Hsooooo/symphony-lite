@@ -50,7 +50,6 @@ class Token(BaseModel):
 class ProjectBase(BaseModel):
     slug: str
     name: str
-    repo_url: Optional[str] = None
 
 class ProjectCreate(ProjectBase):
     team_id: UUID
@@ -65,6 +64,45 @@ class ProjectResponse(ProjectBase):
 
 class ProjectWithTeam(ProjectResponse):
     team: Optional[TeamResponse] = None
+
+
+# ========== Project Repository ==========
+class ProjectRepositoryBase(BaseModel):
+    name: str
+    repo_url: str
+
+class ProjectRepositoryCreate(ProjectRepositoryBase):
+    team_id: Optional[UUID] = None
+
+class ProjectRepositoryResponse(ProjectRepositoryBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    project_id: UUID
+    team_id: Optional[UUID] = None
+    created_at: datetime
+    team: Optional[TeamResponse] = None
+
+
+# ========== Project Environment ==========
+class ProjectEnvironmentBase(BaseModel):
+    name: str
+    platform: Optional[str] = None
+    server_address: Optional[str] = None
+    port: Optional[int] = None
+    urls: Dict[str, Any] = {}
+    specs: Dict[str, Any] = {}
+    deploy_script: Optional[str] = None
+    notes: Optional[str] = None
+
+class ProjectEnvironmentCreate(ProjectEnvironmentBase):
+    pass
+
+class ProjectEnvironmentResponse(ProjectEnvironmentBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    project_id: UUID
+    created_at: datetime
+    updated_at: datetime
 
 
 # ========== Project Member ==========

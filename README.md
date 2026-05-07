@@ -238,7 +238,22 @@ Kimi: MCP symphony_propose_status_change(EM-1, "review", "테스트 통과")
 | Method | Endpoint | 설명 |
 |--------|----------|------|
 | GET | `/api/v1/teams` | 팀 목록 |
+| GET | `/api/v1/teams/{slug}/members` | 팀별 멤버 목록 |
+| GET | `/api/v1/users` | 전체 사용자 목록 |
 | GET | `/api/v1/projects/team/{team_slug}` | 팀별 프로젝트 목록 |
+| POST | `/api/v1/projects` | 프로젝트 생성 |
+| GET | `/api/v1/projects/{slug}` | 프로젝트 상세 |
+| GET | `/api/v1/projects/{slug}/members` | 프로젝트 멤버 목록 |
+| POST | `/api/v1/projects/{slug}/members` | 프로젝트 멤버 추가 |
+| DELETE | `/api/v1/projects/{slug}/members/{user_id}` | 프로젝트 멤버 제거 |
+| GET | `/api/v1/projects/{slug}/repositories` | 프로젝트 레포지토리 목록 |
+| POST | `/api/v1/projects/{slug}/repositories` | 레포지토리 추가 |
+| PATCH | `/api/v1/projects/{slug}/repositories/{repo_id}` | 레포지토리 수정 |
+| DELETE | `/api/v1/projects/{slug}/repositories/{repo_id}` | 레포지토리 삭제 |
+| GET | `/api/v1/projects/{slug}/environments` | 배포 환경 목록 |
+| POST | `/api/v1/projects/{slug}/environments` | 배포 환경 추가 |
+| PATCH | `/api/v1/projects/{slug}/environments/{env_id}` | 배포 환경 수정 |
+| DELETE | `/api/v1/projects/{slug}/environments/{env_id}` | 배포 환경 삭제 |
 | GET | `/api/v1/issues/project/{project_slug}` | 프로젝트 이슈 목록 |
 | POST | `/api/v1/issues/project/{project_slug}` | 이슈 생성 |
 | GET | `/api/v1/issues/{identifier}` | 이슈 상세 |
@@ -252,7 +267,7 @@ Kimi: MCP symphony_propose_status_change(EM-1, "review", "테스트 통과")
 
 - [x] **Phase 1**: 핵심 API + React UI + Docker Compose 배포
 - [x] **Phase 2**: MCP 서버 완성 + Kimi 연동 가이드
-- [x] **Phase 3**: 상태 머신 + 하이브리드 승인 워크플로우 (웹 UI 포함)
+- [x] **Phase 3**: 상태 머신 + 하이브리드 승인 워크플로우 + 프로젝트 멤버 관리 + 프로젝트 인프라 정보 (레포/환경)
 - [ ] **Phase 4**: WORKFLOW.md 파싱 및 프로젝트별 템플릿
 - [ ] **Phase 5**: JWT 인증 + 팀/프로젝트 권한 제어
 - [ ] **Phase 6**: 작업 로그 분석 + 에이전트 성능 메트릭 대시보드

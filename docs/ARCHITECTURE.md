@@ -80,9 +80,15 @@ graph TB
 erDiagram
     TEAM ||--o{ PROJECT : has
     TEAM ||--o{ ISSUE : has
+    TEAM ||--o{ USER : has
+    TEAM ||--o{ PROJECT_REPOSITORY : assigned_to
     PROJECT ||--o{ ISSUE : contains
+    PROJECT ||--o{ PROJECT_MEMBER : has
+    PROJECT ||--o{ PROJECT_REPOSITORY : has
+    PROJECT ||--o{ PROJECT_ENVIRONMENT : has
     ISSUE ||--o{ STATUS_PROPOSAL : has
     ISSUE ||--o{ WORK_LOG : has
+    USER ||--o{ PROJECT_MEMBER : member_of
 
     TEAM {
         uuid id PK
@@ -96,9 +102,32 @@ erDiagram
         string slug UK
         string name
         uuid team_id FK
-        text repo_url
         jsonb workflow_config
         datetime created_at
+    }
+
+    PROJECT_REPOSITORY {
+        uuid id PK
+        uuid project_id FK
+        string name
+        text repo_url
+        uuid team_id FK
+        datetime created_at
+    }
+
+    PROJECT_ENVIRONMENT {
+        uuid id PK
+        uuid project_id FK
+        string name
+        string platform
+        string server_address
+        int port
+        jsonb urls
+        jsonb specs
+        text deploy_script
+        text notes
+        datetime created_at
+        datetime updated_at
     }
 
     ISSUE {

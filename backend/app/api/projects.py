@@ -100,3 +100,134 @@ def remove_project_member(
     if not success:
         raise HTTPException(status_code=404, detail="Member not found")
     return {"ok": True}
+
+
+def _require_project_admin(db: Session, project, current_user: models.User):
+    """프로젝트 admin 권한이 있는지 확인하는 헬퍼"""
+    existing = crud.get_project_member(db, project.id, current_user.id)
+    if not existing or existing.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin permission required")
+
+
+# ========== Project Repositories ==========
+@router.get("/{slug}/repositories", response_model=List[schemas.ProjectRepositoryResponse])
+def list_project_repositories(
+    slug: str,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    project = crud.get_project_by_slug(db, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return crud.get_project_repositories(db, project.id)
+
+
+@router.post("/{slug}/repositories", response_model=schemas.ProjectRepositoryResponse)
+def add_project_repository(
+    slug: str,
+    repo: schemas.ProjectRepositoryCreate,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    project = crud.get_project_by_slug(db, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    _require_project_admin(db, project, current_user)
+    return crud.create_project_repository(db, project.id, repo)
+
+
+@router.patch("/{slug}/repositories/{repo_id}", response_model=schemas.ProjectRepositoryResponse)
+def update_project_repository(
+    slug: str,
+    repo_id: UUID,
+    repo: schemas.ProjectRepositoryCreate,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    project = crud.get_project_by_slug(db, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    _require_project_admin(db, project, current_user)
+    db_repo = crud.update_project_repository(db, repo_id, repo)
+    if not db_repo:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    return db_repo
+
+
+@router.delete("/{slug}/repositories/{repo_id}")
+def remove_project_repository(
+    slug: str,
+    repo_id: UUID,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    project = crud.get_project_by_slug(db, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    _require_project_admin(db, project, current_user)
+    success = crud.delete_project_repository(db, repo_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    return {"ok": True}
+
+
+# ========== Project Environments ==========
+@router.get("/{slug}/environments", response_model=List[schemas.ProjectEnvironmentResponse])
+def list_project_environments(
+    slug: str,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    project = crud.get_project_by_slug(db, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return crud.get_project_environments(db, project.id)
+
+
+@router.post("/{slug}/environments", response_model=schemas.ProjectEnvironmentResponse)
+def add_project_environment(
+    slug: str,
+    env: schemas.ProjectEnvironmentCreate,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    project = crud.get_project_by_slug(db, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    _require_project_admin(db, project, current_user)
+    return crud.create_project_environment(db, project.id, env)
+
+
+@router.patch("/{slug}/environments/{env_id}", response_model=schemas.ProjectEnvironmentResponse)
+def update_project_environment(
+    slug: str,
+    env_id: UUID,
+    env: schemas.ProjectEnvironmentCreate,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    project = crud.get_project_by_slug(db, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    _require_project_admin(db, project, current_user)
+    db_env = crud.update_project_environment(db, env_id, env)
+    if not db_env:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    return db_env
+
+
+@router.delete("/{slug}/environments/{env_id}")
+def remove_project_environment(
+    slug: str,
+    env_id: UUID,
+    current_user: models.User = Depends(get_current_user_or_api_key),
+    db: Session = Depends(get_db)
+):
+    project = crud.get_project_by_slug(db, slug)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    _require_project_admin(db, project, current_user)
+    success = crud.delete_project_environment(db, env_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Environment not found")
+    return {"ok": True}

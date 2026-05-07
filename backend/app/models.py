@@ -56,13 +56,14 @@ class Project(Base):
     slug = Column(String(50), unique=True, nullable=False)
     name = Column(String(100), nullable=False)
     team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"))
-    repo_url = Column(Text)
     workflow_config = Column(JSON, default={})
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
     
     team = relationship("Team", back_populates="projects")
     issues = relationship("Issue", back_populates="project")
     members = relationship("ProjectMember", back_populates="project", cascade="all, delete-orphan")
+    repositories = relationship("ProjectRepository", back_populates="project", cascade="all, delete-orphan")
+    environments = relationship("ProjectEnvironment", back_populates="project", cascade="all, delete-orphan")
 
 
 class ProjectMember(Base):
@@ -80,6 +81,43 @@ class ProjectMember(Base):
     inviter = relationship("User", foreign_keys=[invited_by])
     
     __table_args__ = (UniqueConstraint('project_id', 'user_id', name='uix_project_user'),)
+
+
+class ProjectRepository(Base):
+    __tablename__ = "project_repositories"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    repo_url = Column(Text, nullable=False)
+    team_id = Column(UUID(as_uuid=True), ForeignKey("teams.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    
+    project = relationship("Project", back_populates="repositories")
+    team = relationship("Team")
+    
+    __table_args__ = (UniqueConstraint('project_id', 'name', name='uix_project_repo_name'),)
+
+
+class ProjectEnvironment(Base):
+    __tablename__ = "project_environments"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+    name = Column(String(100), nullable=False)
+    platform = Column(String(50), nullable=True)
+    server_address = Column(String(255), nullable=True)
+    port = Column(Integer, nullable=True)
+    urls = Column(JSON, default={})
+    specs = Column(JSON, default={})
+    deploy_script = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    project = relationship("Project", back_populates="environments")
+    
+    __table_args__ = (UniqueConstraint('project_id', 'name', name='uix_project_env_name'),)
 
 
 class Issue(Base):

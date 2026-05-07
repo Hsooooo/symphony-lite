@@ -315,3 +315,69 @@ def create_work_log(db: Session, issue_id: UUID, log: schemas.WorkLogCreate, use
     db.commit()
     db.refresh(db_log)
     return db_log
+
+
+# ========== Project Repository CRUD ==========
+def get_project_repositories(db: Session, project_id: UUID, skip: int = 0, limit: int = 100):
+    return db.query(models.ProjectRepository).options(
+        joinedload(models.ProjectRepository.team)
+    ).filter(
+        models.ProjectRepository.project_id == project_id
+    ).offset(skip).limit(limit).all()
+
+def create_project_repository(db: Session, project_id: UUID, repo: schemas.ProjectRepositoryCreate):
+    db_repo = models.ProjectRepository(project_id=project_id, **repo.model_dump())
+    db.add(db_repo)
+    db.commit()
+    db.refresh(db_repo)
+    return db_repo
+
+def update_project_repository(db: Session, repo_id: UUID, repo: schemas.ProjectRepositoryCreate):
+    db_repo = db.query(models.ProjectRepository).filter(models.ProjectRepository.id == repo_id).first()
+    if not db_repo:
+        return None
+    for key, value in repo.model_dump().items():
+        setattr(db_repo, key, value)
+    db.commit()
+    db.refresh(db_repo)
+    return db_repo
+
+def delete_project_repository(db: Session, repo_id: UUID):
+    db_repo = db.query(models.ProjectRepository).filter(models.ProjectRepository.id == repo_id).first()
+    if db_repo:
+        db.delete(db_repo)
+        db.commit()
+        return True
+    return False
+
+
+# ========== Project Environment CRUD ==========
+def get_project_environments(db: Session, project_id: UUID, skip: int = 0, limit: int = 100):
+    return db.query(models.ProjectEnvironment).filter(
+        models.ProjectEnvironment.project_id == project_id
+    ).offset(skip).limit(limit).all()
+
+def create_project_environment(db: Session, project_id: UUID, env: schemas.ProjectEnvironmentCreate):
+    db_env = models.ProjectEnvironment(project_id=project_id, **env.model_dump())
+    db.add(db_env)
+    db.commit()
+    db.refresh(db_env)
+    return db_env
+
+def update_project_environment(db: Session, env_id: UUID, env: schemas.ProjectEnvironmentCreate):
+    db_env = db.query(models.ProjectEnvironment).filter(models.ProjectEnvironment.id == env_id).first()
+    if not db_env:
+        return None
+    for key, value in env.model_dump().items():
+        setattr(db_env, key, value)
+    db.commit()
+    db.refresh(db_env)
+    return db_env
+
+def delete_project_environment(db: Session, env_id: UUID):
+    db_env = db.query(models.ProjectEnvironment).filter(models.ProjectEnvironment.id == env_id).first()
+    if db_env:
+        db.delete(db_env)
+        db.commit()
+        return True
+    return False
