@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: symphony-db
+    environment:
+      POSTGRES_USER: symphony
+      POSTGRES_PASSWORD: symphony
+      POSTGRES_DB: symphony
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "15432:5432"  # 외부 디버깅용 (선택적)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U symphony -d symphony"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - symphony-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: symphony-backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://symphony:symphony@db:5432/symphony
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - symphony-net
+    # 외부 포트 노출 없음 (nginx가 내에서 프록시)
+
+  mcp:
+    build:
+      context: .
+      dockerfile: mcp/Dockerfile
+    container_name: symphony-mcp
+    environment:
+      SYMPHONY_API_URL: http://backend:8000/api/v1
+      SYMPHONY_API_KEY: ${SYMPHONY_API_KEY:-}
+    depends_on:
+      - backend
+    networks:
+      - symphony-net
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: symphony-nginx
+    ports:
+      - "18080:80"  # 메인 접근 포트
+    depends_on:
+      - backend
+      - mcp
+    networks:
+      - symphony-net
+
+volumes:
+  postgres_data:
+
+networks:
+  symphony-net:
+    driver: bridge

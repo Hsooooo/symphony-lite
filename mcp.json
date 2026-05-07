@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "symphony-lite": {
+      "command": "/Users/ihansu/VsCodeProjects/symphony-lite/backend/venv/bin/python",
+      "args": [
+        "/Users/ihansu/VsCodeProjects/symphony-lite/mcp/server.py"
+      ],
+      "env": {
+        "SYMPHONY_API_URL": "http://localhost:18080/api/v1",
+        "SYMPHONY_API_KEY": "sym_cF0VjU5CTdYBzb5EJaVYS-rMDxBbwtGgRyKuvW4S5VU"
+      }
+    }
+  }
+}

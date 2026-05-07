@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+backend/venv/
+
+# Build outputs
+frontend/dist/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment files
+.env
+backend/.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Misc
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
