@@ -55,7 +55,7 @@ def register_tools(mcp: FastMCP):
             resp = await client.get(
                 f"/issues/project/{project_slug}",
                 params={k: v for k, v in params.items() if v is not None},
-                headers=headers,
+                headers=_get_headers(),
             )
             resp.raise_for_status()
             data = resp.json()
