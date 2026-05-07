@@ -51,7 +51,7 @@ services:
       dockerfile: nginx/Dockerfile
     container_name: symphony-nginx
     ports:
-      - "18080:80"  # 메인 접근 포트
+      - "10356:80"  # 메인 접근 포트
     depends_on:
       - backend
       - mcp
