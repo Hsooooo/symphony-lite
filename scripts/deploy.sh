@@ -21,13 +21,18 @@ docker compose up --build -d
 echo "⏳ 서비스 기동 대기 중..."
 sleep 5
 
+# nginx가 노출한 실제 호스트 포트 확인 (docker-compose.yml의 ports 매핑)
+NGINX_PORT=$(docker compose port nginx 80 2>/dev/null | cut -d: -f2 || echo "18080")
+echo "   🌐 nginx 포트: ${NGINX_PORT}"
+
 MAX_RETRIES=30
 RETRY=0
-while ! curl -sf http://localhost:18080/api/v1/teams >/dev/null 2>&1; do
+while ! curl -sf "http://localhost:${NGINX_PORT}/api/v1/teams" >/dev/null 2>&1; do
     RETRY=$((RETRY + 1))
     if [ "$RETRY" -ge "$MAX_RETRIES" ]; then
         echo "❌ Health check 실패. 로그를 확인하세요:"
         echo "   docker compose logs --tail 50 backend"
+        echo "   docker compose logs --tail 20 nginx"
         exit 1
     fi
     echo "   ...(${RETRY}/${MAX_RETRIES})"

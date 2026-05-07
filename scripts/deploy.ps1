@@ -21,13 +21,18 @@ docker compose up --build -d
 Write-Host "⏳ 서비스 기동 대기 중..." -ForegroundColor Cyan
 Start-Sleep -Seconds 5
 
+# nginx가 노출한 실제 호스트 포트 확인
+$NGINX_PORT = (docker compose port nginx 80 2>$null) -split ':' | Select-Object -Last 1
+if (-not $NGINX_PORT) { $NGINX_PORT = "18080" }
+Write-Host "   🌐 nginx 포트: ${NGINX_PORT}" -ForegroundColor Cyan
+
 $MAX_RETRIES = 30
 $RETRY = 0
 $HEALTHY = $false
 
 while ($RETRY -lt $MAX_RETRIES) {
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:18080/api/v1/teams" -UseBasicParsing -ErrorAction Stop
+        $response = Invoke-WebRequest -Uri "http://localhost:${NGINX_PORT}/api/v1/teams" -UseBasicParsing -ErrorAction Stop
         if ($response.StatusCode -eq 200) {
             $HEALTHY = $true
             break
@@ -42,6 +47,7 @@ while ($RETRY -lt $MAX_RETRIES) {
 if (-not $HEALTHY) {
     Write-Host "❌ Health check 실패." -ForegroundColor Red
     Write-Host "   docker compose logs --tail 50 backend" -ForegroundColor Yellow
+    Write-Host "   docker compose logs --tail 20 nginx" -ForegroundColor Yellow
     exit 1
 }
 
